@@ -217,7 +217,22 @@ const Shop = {
         G.gold -= it.price;
         addItem(id, 1);
         AudioSys.sfx('coin');
-        UI.toast(`Compraste ${it.icon} ${it.name}`);
+        let extra = '';
+        if (['weapon','armor','acc'].includes(it.type)) {
+          const slot = it.type === 'weapon' ? 'weapon' : it.type === 'armor' ? 'armor' : 'acc';
+          const who = G.party.find(h => {
+            if (!it.who || it.who === 'all') return true;
+            return Array.isArray(it.who) ? it.who.includes(h.id) : it.who === h.id;
+          });
+          if (who) {
+            const before = statsOf(who);
+            who.equip[slot] = id;
+            const after = statsOf(who);
+            extra = ` · ${who.name} ATQ ${before.atk}→${after.atk} DEF ${before.def}→${after.def}`;
+          }
+        }
+        UI.toast(`Compraste ${it.icon} ${it.name}${extra}`);
+        markDirty();
       } else { UI.toast('Oro insuficiente...'); AudioSys.sfx('cancel'); }
     }
     this.render();
@@ -244,7 +259,7 @@ const UI = {
   menuSel: 0, menuPage: 'main', itemSel: 0, equipSel: 0, saveSel: 0,
 
   hideAll() {
-    ['dialog','choice-box','menu','shop','toast','play-hud','combat-bar'].forEach(id => { const el = $(id); if (el) el.classList.add('hidden'); });
+    ['dialog','choice-box','menu','shop','toast','play-hud','combat-bar','quest-hud','help-overlay'].forEach(id => { const el = $(id); if (el) el.classList.add('hidden'); });
     this.hideBattle();
   },
 
@@ -273,9 +288,24 @@ const UI = {
     document.body.classList.toggle('ui-menu', G.state === 'menu' || G.state === 'shop');
     if (show && G.party && G.party.length) {
       h.classList.remove('hidden');
-      const sig = (G.gold||0) + '|' + (G.map && G.map.name) + '|' + G.party.map(p => p.hp+','+p.mp+','+p.lv+','+p.name).join(';');
-      if (sig !== this._hudSig) { this._hudSig = sig; this.renderPlayHUD(); }
+      const sig = (G.gold||0) + '|' + (G.map && G.map.name) + '|' + G.party.map(p => p.hp+','+p.mp+','+p.lv+','+p.name).join(';') + '|' + (G.quests||[]).map(q=>q.id+q.done+(G.flags.slimeCount||0)).join();
+      if (sig !== this._hudSig) { this._hudSig = sig; this.renderPlayHUD(); this.renderQuestHUD(); }
     } else h.classList.add('hidden');
+  },
+
+  renderQuestHUD() {
+    const el = $('quest-hud');
+    if (!el) return;
+    const active = (G.quests || []).filter(q => !q.done);
+    if (!active.length || G.state !== 'play') { el.classList.add('hidden'); return; }
+    el.classList.remove('hidden');
+    el.innerHTML = active.map(q => {
+      let extra = '';
+      if (q.id === 'slimes') extra = ' · ' + (G.flags.slimeCount || 0) + '/3';
+      if (q.id === 'flower') extra = G.inventory.q_flower ? ' · ¡Tienes la flor!' : '';
+      if (q.id === 'relic') extra = G.inventory.q_relic ? ' · ¡Tienes la reliquia!' : '';
+      return `<div>📜 ${q.name}${extra}</div>`;
+    }).join('');
   },
 
   renderPlayHUD() {
@@ -317,6 +347,7 @@ const UI = {
       ['✦ Habilidades', 'Consulta las técnicas del grupo'],
       ['📜 Misiones', 'Tu registro de aventuras'],
       ['💾 Guardar', 'Registra tu progreso'],
+      ['🕹️ Controles', 'Teclado y táctil'],
       ['↩ Cerrar', 'Vuelve al juego'],
     ];
     $('menu-list').innerHTML = opts.map((o,i) =>
@@ -457,15 +488,16 @@ const UI = {
   },
 
   menuInput(k) {
-    const opts = 6;
+    const opts = 7;
     if (this.menuPage === 'main') {
       if (k==='up') { this.menuSel = (this.menuSel+opts-1)%opts; AudioSys.sfx('cursor'); }
       if (k==='down') { this.menuSel = (this.menuSel+1)%opts; AudioSys.sfx('cursor'); }
       if (k==='confirm') {
         AudioSys.sfx('confirm');
-        const pages = ['items','equip','skills','quests','save','close'];
+        const pages = ['items','equip','skills','quests','save','help','close'];
         const p = pages[this.menuSel];
         if (p==='close') return this.closeMenu();
+        if (p==='help') { this.closeMenu(); Help.show(); return; }
         this.menuPage = p;
         if (p==='items') this.itemSel = 0;
         if (p==='save') this.saveSel = 0;
@@ -708,7 +740,15 @@ const Save = {
     // triggers "once" se reconstruyen; los cofres ya en flags
     enterMap(d.mapId, d.px, d.py);
     G.player.dir = d.dir || 'down';
+    G.dirty = false;
     return true;
   },
   has(slot) { return !!localStorage.getItem('aetheria_save_'+slot); },
 };
+
+addEventListener('beforeunload', e => {
+  if (G.dirty && ['play','dialog','menu','shop'].includes(G.state)) {
+    e.preventDefault();
+    e.returnValue = '';
+  }
+});

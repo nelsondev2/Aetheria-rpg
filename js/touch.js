@@ -14,6 +14,7 @@ function fireVirtual(k) {
   const st = G.state;
   if (st === 'title') Title.input(k);
   else if (st === 'intro') Input.pressed[k] = true;                 // Intro.update hace polling
+  else if (st === 'dialog' && $('help-overlay') && !$('help-overlay').classList.contains('hidden')) Help.hide();
   else if (st === 'dialog' && !Dialog.el.classList.contains('hidden')) { if (k === 'confirm') Dialog.advance(); }
   else if (st === 'dialog') Choice.input(k);
   else if (st === 'menu') UI.menuInput(k);

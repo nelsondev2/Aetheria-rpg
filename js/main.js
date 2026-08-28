@@ -3,6 +3,26 @@
    ============================================================ */
 'use strict';
 
+/* ---------- Ayuda / controles ---------- */
+const Help = {
+  onDone: null,
+  show(onDone) {
+    const el = $('help-overlay');
+    if (!el) { if (onDone) onDone(); return; }
+    this.onDone = onDone || null;
+    G.state = 'dialog';
+    el.classList.remove('hidden');
+    el.onclick = () => Help.hide();
+  },
+  hide() {
+    const el = $('help-overlay');
+    if (el) el.classList.add('hidden');
+    G.state = 'play';
+    const f = this.onDone; this.onDone = null;
+    if (f) f();
+  },
+};
+
 /* ---------- Título ---------- */
 const Title = {
   sel: 0, options: [],
@@ -235,12 +255,20 @@ const Ending = {
       c.fillStyle = '#ffd75e'; c.font = '700 34px Palatino, Georgia, serif';
       c.fillText('¡AETHERIA ES LIBRE!', canvas.width/2, canvas.height/2-58);
       c.fillStyle = '#fff'; c.font = '400 19px sans-serif';
-      const lines = [
+      const qn = (G.quests || []).filter(q => q.done).length;
+      const good = qn >= 3 || (G.flags.slimeClaimed && G.flags.flowerTurned && G.flags.relicTurned);
+      const lines = good ? [
         `El Rey Demonio Vorthak ha caído. Las sombras se disuelven como niebla al alba.`,
+        `Cumpliste cada promesa: el camino, la flor, la reliquia. Lumina te llama salvador.`,
         `Los pueblos cantan tu nombre, ${G.party[0].name}, Héroe Invocado.`,
         `Y en algún lugar entre dos mundos... una nueva leyenda nace.`,
+        `★ FINAL BUENO — ¡Gracias por jugar AETHERIA!`,
+      ] : [
+        `El Rey Demonio Vorthak ha caído. Las sombras se disuelven como niebla al alba.`,
+        `Aetheria es libre... aunque algunas promesas quedaron sin cumplir.`,
+        `Los pueblos recuerdan tu espada, ${G.party[0].name}. La leyenda, a medias.`,
         ``,
-        `¡Gracias por jugar AETHERIA — Crónicas de Otro Mundo!`,
+        `FINAL — ¡Gracias por jugar AETHERIA — Crónicas de Otro Mundo!`,
       ];
       lines.forEach((l,i) => c.fillText(l, canvas.width/2, canvas.height/2-16+i*30));
       if (this.t > 6) {
@@ -266,11 +294,13 @@ const Events = {
   },
 
   bossIntro(tr) {
+    G.flags[tr.boss + 'Fight'] = true;
     G.flags['bossFight'] = true;
     Dialog.say(tr.intro, { face:null, name:'¡Amenaza!', onDone: () => {
       G.flags['bossFight'] = false;
       const post = () => {
         G.flags[tr.boss+'Down'] = true;
+        markDirty();
         if (tr.boss === 'bossFinal') { G.flags['gameWon'] = true; Ending.start(); return; }
         if (tr.event) this.run(tr.event);
       };
@@ -387,6 +417,7 @@ addEventListener('keydown', e => {
   let consumed = true;
   if (st==='title') Title.input(k);
   else if (st==='intro') consumed = false; // se lee por polling en Intro.update
+  else if (st==='dialog' && $('help-overlay') && !$('help-overlay').classList.contains('hidden')) Help.hide();
   else if (st==='dialog' && !Dialog.el.classList.contains('hidden')) { if (k==='confirm') Dialog.advance(); }
   else if (st==='dialog') Choice.input(k);
   else if (st==='menu') UI.menuInput(k);

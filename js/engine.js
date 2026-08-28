@@ -45,7 +45,7 @@ const Input = {
                   ArrowUp:'up', ArrowDown:'down', ArrowLeft:'left', ArrowRight:'right',
                   w:'up', W:'up', s:'down', S:'down', a:'left', A:'left', d:'right', D:'right',
                   '1':'skill1', '2':'skill2', '3':'skill3', '4':'skill4',
-                  q:'potion', Q:'potion' };
+                  q:'potion', Q:'potion', c:'dash', C:'dash' };
     return map[k] || k;
   },
   down(a) {
@@ -74,7 +74,10 @@ const G = {
   time: 0,
   monstersSlain: 0,
   playtime: 0,
+  dirty: false,
 };
+
+function markDirty() { G.dirty = true; }
 
 /* Creación de miembros del grupo */
 function makeHero(id, lv=1) {
@@ -296,6 +299,54 @@ const Render = {
     ctx2d.fillStyle = 'rgba(0,0,0,.28)';
     ctx2d.beginPath(); ctx2d.ellipse(sxp+16, syp+34, 10, 4, 0, 0, Math.PI*2); ctx2d.fill();
     this.drawSprite(w.sheet, sxp, syp, { sx, sy, sw:16, sh:18, scale:2 });
+    if (w.data && G.state === 'play') {
+      const mk = npcQuestMark(w);
+      if (mk) {
+        const bob = Math.sin(G.time * 4) * 2;
+        ctx2d.font = '800 16px sans-serif';
+        ctx2d.textAlign = 'center';
+        ctx2d.lineWidth = 3; ctx2d.strokeStyle = 'rgba(0,0,0,.7)';
+        ctx2d.strokeText(mk, sxp + 16, syp - 2 + bob);
+        ctx2d.fillStyle = mk === '!' ? '#ffd75e' : '#7ec2ff';
+        ctx2d.fillText(mk, sxp + 16, syp - 2 + bob);
+      }
+    }
+  },
+
+  drawCompass(map) {
+    const interiors = { temple:1, inn:1, shopA:1, shopB:1, throne:1, well:1 };
+    const groups = {};
+    for (const pt of map.def.portals || []) {
+      if (pt.door || interiors[map.id]) continue;
+      const dest = MAPS[pt.to];
+      const name = dest ? dest.name : pt.to;
+      const k = pt.to;
+      if (!groups[k]) groups[k] = { xs: [], ys: [], name };
+      groups[k].xs.push(pt.x); groups[k].ys.push(pt.y);
+    }
+    ctx2d.font = '700 12px sans-serif';
+    ctx2d.textAlign = 'center';
+    const pad = 18, W = canvas.width, H = canvas.height;
+    for (const g of Object.values(groups)) {
+      const mx = g.xs.reduce((a, b) => a + b, 0) / g.xs.length;
+      const my = g.ys.reduce((a, b) => a + b, 0) / g.ys.length;
+      let x = (mx - this.cam.x) * TILE + 16;
+      let y = (my - this.cam.y) * TILE + 16;
+      const on = x > 40 && x < W - 40 && y > 40 && y < H - 40;
+      if (on) continue;
+      x = clamp(x, pad + 40, W - pad - 40);
+      y = clamp(y, pad + 16, H - pad - 16);
+      const lab = g.name;
+      const w = ctx2d.measureText(lab).width + 18;
+      ctx2d.globalAlpha = 0.92;
+      ctx2d.fillStyle = 'rgba(8,12,32,.88)';
+      ctx2d.fillRect(x - w / 2, y - 10, w, 18);
+      ctx2d.strokeStyle = '#f0d78c'; ctx2d.lineWidth = 1;
+      ctx2d.strokeRect(x - w / 2, y - 10, w, 18);
+      ctx2d.fillStyle = '#ffd75e';
+      ctx2d.fillText('➤ ' + lab, x, y + 3);
+      ctx2d.globalAlpha = 1;
+    }
   },
 
   drawObjects(map, pass) {
@@ -567,23 +618,35 @@ function updatePlay(dt) {
 function updatePlayer(dt, map) {
   const p = G.player;
   p.update(dt, map);
+  Combat.dashCD = Math.max(0, (Combat.dashCD || 0) - dt);
 
   if (!p.moving) {
-    // input direccional
     let dir = null;
     if (Input.down('up')) dir='up'; else if (Input.down('down')) dir='down';
     else if (Input.down('left')) dir='left'; else if (Input.down('right')) dir='right';
+    const tapDash = dir && Input.lastDir === dir && (G.time - (Input.lastDirT || 0)) < 0.28;
+    const wantDash = Input.hit('dash') || tapDash;
     if (dir) {
       p.dir = dir;
       const [dx,dy] = DIRV[dir];
+      const dash = wantDash && Combat.dashCD <= 0;
       const nx = p.tx+dx, ny = p.ty+dy;
-      const speed = Input.down('run') ? 8 : p.speed;
+      const nx2 = p.tx+dx*2, ny2 = p.ty+dy*2;
+      const speed = dash ? 16 : (Input.down('run') ? 8 : p.speed);
       p.speedBase = p.speed; p.speed = speed;
-      if (walkable(map, nx, ny) && !map.npcAt.has(nx+','+ny) && !npcAt2(map, nx, ny)) {
+      const free = (x,y) => walkable(map, x, y) && !map.npcAt.has(x+','+y) && !npcAt2(map, x, y);
+      if (dash && free(nx, ny)) {
+        const destX = free(nx2, ny2) ? nx2 : nx, destY = free(nx2, ny2) ? ny2 : ny;
+        p.startMove(dir, destX, destY);
+        Combat.dashCD = 0.7; Combat.iFrames = 0.32; Combat.flashes = 0.08;
+        AudioSys.sfx('dash');
+        G.steps++; markDirty();
+      } else if (free(nx, ny)) {
         p.startMove(dir, nx, ny);
         G.steps++;
       }
       p.speed = p.speedBase;
+      if (dirTap) { Input.lastDir = dir; Input.lastDirT = G.time; }
     }
     if (Input.hit('cancel')) { UI.openMenu(); }
   }
@@ -617,6 +680,17 @@ function checkPortal(map) {
     if (tr.done) continue;
     if (tr.cond && !parseCond(tr.cond)) continue;
     if (p.tx >= tr.x && p.tx < tr.x+tr.w && p.ty >= tr.y && p.ty < tr.y+tr.h) {
+      if (tr.boss) {
+        if (G.flags[tr.boss + 'Down']) continue;
+        if (G.flags[tr.boss + 'Fight']) {
+          if (typeof Combat !== 'undefined' && !Combat.foes.some(f => f.boss && !f.dead)) {
+            Combat.spawnBoss(tr.boss);
+          }
+          return;
+        }
+        Events.run(tr.event || tr);
+        return;
+      }
       if (tr.once) tr.done = true;
       Events.run(tr.event || tr);
       return;
@@ -651,6 +725,7 @@ function enterMap(mapId, tx, ty) {
   G.mapEnterT = G.time;
   AudioSys.playTrack(map.music);
   if (typeof Combat !== 'undefined') Combat.spawnForMap(map);
+  markDirty();
   UI.updateHUD();
 }
 
@@ -674,6 +749,7 @@ function tryInteract(map) {
     AudioSys.sfx('chest');
     if (chest.gold) {
       G.gold += chest.gold;
+      markDirty();
       Dialog.say([`¡Has encontrado ${chest.gold} de oro!`], { face:null, name:'Cofre' });
     } else {
       addItem(chest.item, chest.qty||1);
@@ -691,12 +767,33 @@ function tryInteract(map) {
   if (bed && map.id==='inn') { Events.run('innSleepOffer'); return true; }
   const altar = (map.objects||[]).find(o => o.type==='altar' && o.x===fx && o.y===fy);
   if (altar) { Events.run('altarOffer'); return true; }
+  const well = (map.objects||[]).find(o => o.type==='well' && fx >= o.x && fx < o.x+2 && fy >= o.y && fy < o.y+2);
+  if (well && map.id === 'village') {
+    AudioSys.sfx('door');
+    transitionTo('well', 5, 6);
+    return true;
+  }
   return false;
+}
+
+function npcQuestMark(npc) {
+  const blocks = (npc.data && npc.data.talk) || [];
+  let chosen = null;
+  for (const b of blocks) {
+    if (!b.cond || parseCond(b.cond)) { chosen = b; break; }
+  }
+  if (!chosen) return null;
+  if (chosen.quest && !G.quests.some(q => q.id === chosen.quest)) return '!';
+  if (chosen.join && chosen.set && !G.flags[chosen.set]) return '!';
+  if (chosen.complete || chosen.removeItem) return '?';
+  if (chosen.giveItem && chosen.set && !G.flags[chosen.set]) return '?';
+  return null;
 }
 
 /* ---------- Inventario ---------- */
 function addItem(id, qty=1) {
   G.inventory[id] = (G.inventory[id]||0) + qty;
+  markDirty();
 }
 function removeItem(id, qty=1) {
   if (!G.inventory[id]) return false;
@@ -721,6 +818,7 @@ function renderFrame() {
       if (typeof Combat !== 'undefined') Combat.render();
       Render.drawLighting(G.map);
       Render.drawPortals(G.map);
+      Render.drawCompass(G.map);
       Render.drawLocationTag();
     }
   } else if (G.state==='battle') {

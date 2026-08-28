@@ -1,102 +1,74 @@
 # ⚔️ AETHERIA — Crónicas de Otro Mundo
 
-Un JRPG de fantasía **isekai** completo, hecho 100% con **HTML, CSS y JavaScript puro**.
-Sin React, sin Node.js, sin dependencias externas: todo funciona en local, incluso
-abriendo el juego directamente con doble clic (`file://`).
+Un JRPG de fantasía **isekai** en **HTML, CSS y JavaScript puro**.
+Sin React, sin Node, sin CDN: abre `index.html` (incluso con `file://`).
 
 ---
 
 ## 🎮 Cómo jugar
 
-1. Descarga o descomprime esta carpeta.
-2. Abre **`index.html`** con tu navegador (Chrome, Edge, Firefox…).
-   - No necesita servidor: funciona con doble clic.
-   - Opcional: `python -m http.server` y abre `http://localhost:8000`.
-3. Pulsa ENTER o toca la pantalla y empieza tu leyenda.
+1. Abre **`index.html`** en el navegador (Chrome, Edge, Firefox…).
+2. Pulsa ENTER o toca la pantalla y empieza tu leyenda.
+
+Opcional: `python -m http.server` → `http://localhost:8000`.
 
 ## 🕹️ Controles
 
-**Escritorio (teclado):**
+**Escritorio**
 
 | Tecla | Acción |
 |-------|--------|
-| **Flechas / WASD** | Moverte |
-| **Z / E / ENTER / Espacio** | Confirmar · Hablar · Interactuar |
-| **X / ESC** | Cancelar · Menú |
-| **Shift (mantener)** | Correr |
+| **Flechas / WASD** | Mover |
+| **Doble toque de dirección** o **C** | Dash (invulnerable un instante) |
+| **Z / A / ENTER / Espacio** | Atacar · Hablar · Interactuar |
+| **1 – 4** | Habilidades |
+| **Q** | Poción rápida |
+| **Shift** | Correr |
+| **X / ESC** | Menú |
 
-**Móvil y tablet (diseño mobile-first, controles táctiles):**
+**Móvil / tablet**
 
 | Control | Acción |
 |---------|--------|
-| **Cruceta virtual** (abajo-izquierda) | Moverte (desliza el dedo entre direcciones) |
-| **Botón A** | Confirmar · Hablar · Interactuar · Avanzar diálogos |
-| **Botón B** | Cancelar · Abrir el menú |
-| **Botón CORRER** | Alterna correr (no hace falta mantener) |
-| **Tocar el escenario** | Acepta / avanza diálogos y mensajes de combate |
-| **Tocar opciones** | Menús, tienda, batalla y misiones son 100 % táctiles |
-| **⛶** | Pantalla completa (Android/Chrome) |
+| Cruceta | Mover (doble toque = dash) |
+| **A** | Atacar / hablar / avanzar |
+| **B** | Menú |
+| **CORRER** | Alterna carrera |
+| **✦ 1–4** | Magia (barra inferior) |
+| Tocar el diálogo | Avanzar texto |
+| **⛶** | Pantalla completa |
 
-La interfaz se dibuja a resolución nativa de pantalla: textos nítidos y
-botones del tamaño de un dedo en cualquier dispositivo. En retrato, el
-lienzo se coloca arriba y la interfaz ocupa el resto; en horizontal, el
-juego llena la pantalla y los controles flotan en las esquinas.
+La primera vez que juegas aparece una ficha de controles (también en el menú).
 
 ## ✨ Características
 
-- **Historia isekai completa**: un estudiante es invocado a Aetheria para derrotar
-  al Rey Demonio Vorthak. Templo → Aldea → Bosque → Cavernas → Fortaleza → Nudo Sombrío.
-- **4 héroes reclutables**: Alex (héroe invocado), Kira (espadachina),
-  Elowen (maga élfica) y Fina (clériga), cada uno con su árbol de habilidades.
-- **Combate por turnos estilo JRPG clásico**: orden por AGI, ataques, 25 habilidades,
-  objetos, defender, huir, debilidades elementales, críticos, buffs/debuffs,
-  jefes con fases de furia y animaciones (embestidas, partículas, flashes, sacudidas).
-- **5 jefes únicos**: Viuda Carmesí, Gólem de Cristal, General Mordrax,
-  Draco Infernal y Vorthak (2 fases).
-- **26 monstruos**, 20+ objetos, armas/armaduras/accesorios equipables.
-- **3 tiendas**, posada con descanso de pago, altar de guardado.
-- **Misiones secundarias**: la reliquia robada, la flor de aurora y el camino peligroso.
-- **Guardado en 3 ranuras** (localStorage) con pantalla de Continuar.
-- **11 mapas** explorados con cámara suave, portales, cofres, iluminación dinámica
-  de cuevas y antorchas.
-- **Música chiptune y 20 efectos** generados proceduralmente con WebAudio
-  (sin archivos de audio).
-- **Arte anime**: ilustraciones de portada, batalla y cinemáticas; sprites estilo
-  RPG Maker; retratos de diálogo para cada personaje.
-- **UI JRPG**: ventanas con filigrana dorada, HUD de exploración (PS/PM/oro/lugar),
-  barras de vida con alerta, emblema y pantalla de carga.
+- **Historia isekai**: invocado a Aetheria para derrotar a Vorthak.
+  Templo → Aldea → Bosque → Cavernas → Fortaleza → Nudo Sombrío (+ pozo secreto).
+- **4 héroes**: Alex, Kira, Elowen y Fina, con árboles de habilidades.
+- **Combate en tiempo real sobre el mapa**: tajo (Z/A), magias 1–4, poción Q,
+  dash, aliados automáticos, jefes con barra de vida. Música de batalla al acercarte.
+- **5 jefes**: Viuda Carmesí, Gólem de Cristal, General Mordrax, Draco Infernal y Vorthak.
+  Si sales a mitad de pelea, el jefe **sigue ahí** al volver.
+- **Misiones** en el HUD (`!` / `?` sobre NPCs). Final bueno si las tres están hechas.
+- **3 tiendas**, posada, altar de guardado (aviso al cerrar la pestaña si no guardaste).
+- **11+ mapas**, portales etiquetados, brújula al borde de pantalla, iluminación de cuevas.
+- **Música chiptune y SFX** por WebAudio (sin archivos de audio).
+- **Vanilla y mobile-first**. Pesa ~2,6 MB.
 
 ## 📁 Estructura
 
 ```
-game/
-├── index.html          ← ábreme
-├── css/style.css       ← mobile-first (base móvil → escritorio)
-├── js/
-│   ├── audio.js        ← motor chiptune WebAudio
-│   ├── data.js         ← habilidades, objetos, héroes, enemigos, tiendas
-│   ├── manifest.js     ← atlas de tiles embebido (soporte file://)
-│   ├── maps.js         ← los 11 mapas del mundo
-│   ├── engine.js       ← motor: assets, input, render, colisiones
-│   ├── battle.js       ← sistema de combate por turnos
-│   ├── ui.js           ← diálogos, menús, tienda, guardado
-│   ├── touch.js        ← gamepad táctil, escalado responsivo, taps
-│   └── main.js         ← título, cinemáticas, arranque
-└── assets/
-    ├── sprites/        ← personajes, monstruos, retratos, props, atlas
-    ├── bg/             ← fondos de batalla e ilustraciones
-    └── tiles/          ← tilesets originales
+├── index.html
+├── css/style.css
+├── js/          motor, combate, mapas, UI, audio
+└── assets/      sprites, fondos, icono
 ```
 
-## 📜 Créditos y licencias
+## 📜 Créditos
 
-- **Sprites de personajes, monstruos y caras**: Charles Gabriel & Antifarea
-  ([OpenGameArt](https://opengameart.org), **CC-BY 3.0**).
-- **Tilesets** Tiny32 / Tiny16 / Path & Objects: Lanea Zimmerman “Sharm” y
-  colaboradores (CC-BY / CC0).
-- **Ilustraciones de escenas y portada**: generadas con IA.
-- **Código, música y diseño**: realizados a medida para este proyecto.
+- Sprites: Charles Gabriel & Antifarea (OpenGameArt, CC-BY 3.0).
+- Tilesets Tiny32 / Tiny16: Lanea Zimmerman “Sharm” (CC-BY / CC0).
+- Ilustraciones de escenas: IA.
+- Código, música y diseño: a medida.
 
-Los créditos también aparecen dentro del juego (menú del título → Créditos).
-
-¡Que la luz de Aetheria te acompañe, héroe! 🌟
+¡Que la luz de Aetheria te acompañe! 🌟

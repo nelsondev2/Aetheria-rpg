@@ -32,21 +32,26 @@ const Combat = {
 
   spawnForMap(map) {
     this.clear();
-    if (!map || !map.def.enc || !ENCOUNTERS[map.def.enc]) { this.syncBar(); return; }
-    const pool = ENCOUNTERS[map.def.enc];
-    if (!pool || !pool.length) { this.syncBar(); return; }
-    const n = map.def.enc === 'throne' ? 2 : (3 + randInt(0, 2));
-    let tries = 0;
-    while (this.foes.length < n && tries++ < 80) {
-      const group = pick(pool);
-      const key = pick(group);
-      const tx = randInt(1, map.w - 2), ty = randInt(1, map.h - 2);
-      if (!walkable(map, tx, ty)) continue;
-      if (G.player && Math.hypot(tx - G.player.tx, ty - G.player.ty) < 6) continue;
-      if ((map.def.portals || []).some(p => Math.abs(p.x - tx) + Math.abs(p.y - ty) < 3)) continue;
-      if (this.foes.some(f => Math.abs(f.tx - tx) + Math.abs(f.ty - ty) < 2)) continue;
-      this.foes.push(this.makeFoe(key, tx, ty, false));
+    const pool = map && map.def.enc && ENCOUNTERS[map.def.enc];
+    if (pool && pool.length) {
+      const n = map.def.enc === 'throne' ? 2 : (3 + randInt(0, 2));
+      let tries = 0;
+      while (this.foes.length < n && tries++ < 80) {
+        const group = pick(pool);
+        const key = pick(group);
+        const tx = randInt(1, map.w - 2), ty = randInt(1, map.h - 2);
+        if (!walkable(map, tx, ty)) continue;
+        if (G.player && Math.hypot(tx - G.player.tx, ty - G.player.ty) < 6) continue;
+        if ((map.def.portals || []).some(p => Math.abs(p.x - tx) + Math.abs(p.y - ty) < 3)) continue;
+        if (this.foes.some(f => Math.abs(f.tx - tx) + Math.abs(f.ty - ty) < 2)) continue;
+        this.foes.push(this.makeFoe(key, tx, ty, false));
+      }
     }
+    if (map) (map.def.triggers || []).forEach(tr => {
+      if (tr.boss && G.flags[tr.boss + 'Fight'] && !G.flags[tr.boss + 'Down']) {
+        if (!this.foes.some(f => f.boss)) this.spawnBoss(tr.boss);
+      }
+    });
     this.syncBar();
   },
 
@@ -99,7 +104,7 @@ const Combat = {
     const p = G.player;
     this.cooldown = 0.38;
     this.slash = { dir: p.dir, t: 0, x: p.px, y: p.py };
-    AudioSys.sfx('hit');
+    AudioSys.sfx('slash');
     const [dx, dy] = DIRV[p.dir];
     const st = statsOf(G.party[0]);
     let hit = 0;
@@ -226,6 +231,8 @@ const Combat = {
     f.hurtT = 0.28;
     this.pop(f, (crit ? '¡' : '') + dmg + (crit ? '!' : ''), crit ? '#ffde5e' : '#fff', crit);
     AudioSys.sfx(crit ? 'crit' : 'hit');
+    this.hitStop = Math.max(this.hitStop || 0, crit ? 0.09 : 0.05);
+    markDirty();
     const p = G.player;
     const kx = Math.sign(f.px - p.px) || 1, ky = Math.sign(f.py - p.py);
     const nx = f.tx + kx, ny = f.ty + ky;
@@ -279,7 +286,8 @@ const Combat = {
     this.iFrames = 0.7;
     this.flashes = 0.18;
     this.pop(G.player, dmg + '', '#ff7a6e');
-    AudioSys.sfx('hit');
+    AudioSys.sfx('hurt');
+    markDirty();
     const p = G.player;
     const kx = Math.sign(p.tx - f.tx), ky = Math.sign(p.ty - f.ty);
     const nx = p.tx + kx, ny = p.ty + ky;
@@ -325,8 +333,19 @@ const Combat = {
     if (!p) return;
     const d = this.dist(f, p);
     const aggro = f.boss ? 9 : 6.2;
-    if (d < 1.15) {
+    const melee = this.alive().filter(o => this.dist(o, p) < 1.55).sort((a, b) => this.dist(a, p) - this.dist(b, p));
+    const canMelee = f.boss || melee[0] === f;
+    if (d < 1.15 && canMelee) {
       if (f.atkCD <= 0) { this.hitHero(f); f.atkCD = f.boss ? 0.85 : 1.05; }
+      return;
+    }
+    if (!canMelee && d < 2.3) {
+      const left = f.dir === 'up' || f.dir === 'down' ? pick(['left', 'right']) : pick(['up', 'down']);
+      const [sx, sy] = DIRV[left];
+      const nx = f.tx + sx, ny = f.ty + sy;
+      if (walkable(G.map, nx, ny) && !(nx === p.tx && ny === p.ty)) {
+        f.dir = left; f.moving = true; f.moveT = 0; f.fromX = f.px; f.fromY = f.py; f.tx = nx; f.ty = ny;
+      }
       return;
     }
     if (d < aggro) {
@@ -382,6 +401,7 @@ const Combat = {
 
   update(dt) {
     if (!G.map || G.state !== 'play') return;
+    if (this.hitStop > 0) { this.hitStop -= dt; dt *= 0.12; }
     this.cooldown = Math.max(0, this.cooldown - dt);
     this.iFrames = Math.max(0, this.iFrames - dt);
     this.flashes = Math.max(0, this.flashes - dt);
@@ -394,6 +414,12 @@ const Combat = {
     this.pops = this.pops.filter(p => p.age < p.life);
     this._barT = (this._barT || 0) + dt;
     if (this._barT > 0.25) { this._barT = 0; this.syncBar(); }
+    const p = G.player;
+    const close = p && this.alive().some(f => this.dist(f, p) < (f.boss ? 9 : 6.2));
+    const boss = this.alive().some(f => f.boss);
+    if (boss) AudioSys.playTrack('boss');
+    else if (close) AudioSys.playTrack('battle');
+    else if (G.map) AudioSys.playTrack(G.map.music);
   },
 
   /* ---------- Render ---------- */
@@ -466,6 +492,18 @@ const Combat = {
     if (this.flashes > 0) {
       c.fillStyle = `rgba(220,40,40,${this.flashes * 1.4})`;
       c.fillRect(0, 0, canvas.width, canvas.height);
+    }
+    const boss = this.alive().find(f => f.boss);
+    if (boss) {
+      const W = canvas.width;
+      c.fillStyle = 'rgba(8,10,20,.82)';
+      c.fillRect(W * 0.18, 10, W * 0.64, 22);
+      c.strokeStyle = '#f0d78c'; c.lineWidth = 2;
+      c.strokeRect(W * 0.18, 10, W * 0.64, 22);
+      c.fillStyle = boss.hp / boss.maxHp < 0.3 ? '#e8434a' : '#c45a3a';
+      c.fillRect(W * 0.18 + 2, 12, (W * 0.64 - 4) * (boss.hp / boss.maxHp), 18);
+      c.fillStyle = '#ffd75e'; c.font = '700 12px sans-serif'; c.textAlign = 'center';
+      c.fillText(boss.name + '  ' + boss.hp + '/' + boss.maxHp, W / 2, 26);
     }
   },
 

@@ -50,6 +50,35 @@
       <div class="hud-chip" id="hud-gold"></div>
       <div class="hud-chip" id="hud-loc"></div>
     </div>
+    <div id="quest-hud" class="hidden"></div>
+  </div>
+
+  <div id="help-overlay" class="hidden jwin">
+    <div class="help-title">🕹️ Controles</div>
+    <div class="help-grid">
+      <div>
+        <b>Teclado</b>
+        <ul>
+          <li><b>WASD / Flechas</b> — mover</li>
+          <li><b>Doble toque dirección</b> o <b>C</b> — dash (invulnerable)</li>
+          <li><b>A / Z / Espacio</b> — atacar o hablar</li>
+          <li><b>1–4</b> — habilidades</li>
+          <li><b>Q</b> — poción rápida</li>
+          <li><b>Shift</b> — correr · <b>X</b> — menú</li>
+        </ul>
+      </div>
+      <div>
+        <b>Táctil</b>
+        <ul>
+          <li><b>Cruceta</b> — mover (doble toque = dash)</li>
+          <li><b>A</b> — atacar / hablar / avanzar</li>
+          <li><b>B</b> — menú</li>
+          <li><b>CORRER</b> — alterna carrera</li>
+          <li><b>✦ 1–4</b> — magia (barra inferior)</li>
+        </ul>
+      </div>
+    </div>
+    <div class="help-foot blink">Toca o pulsa Z para continuar</div>
   </div>
 
   <!-- Diálogo -->
@@ -87,7 +116,7 @@
 
   <!-- Barra de combate en tiempo real -->
   <div id="combat-bar" class="hidden">
-    <div id="cb-hint">A / Z atacar · 1-4 magia · Q poción</div>
+    <div id="cb-hint">A/Z atacar · C dash · 1-4 magia · Q poción</div>
     <div id="cb-skills"></div>
   </div>
 
