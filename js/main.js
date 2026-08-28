@@ -396,8 +396,7 @@ function startNewGame(name) {
   G.mapId = null; G.player = null; G.map = null;
   enterMap('temple', 4, 3);
   G.state = 'play';
-  // cinemática breve de bienvenida (solo si el jugador sigue en el templo en pantalla de juego)
-  setTimeout(() => {
+  Help.show(() => {
     if (G.state !== 'play' || G.mapId !== 'temple') return;
     Dialog.say([
       `Hermana Mirena: ¡${name}! Abriste los ojos... La bendición de la Diosa te trajo sano y salvo.`,
@@ -405,7 +404,7 @@ function startNewGame(name) {
       'Hermana Mirena: El grupo te espera fuera. Ve al norte, cruza el Camino Real y reúne aliados.',
       'Hermana Mirena: (Toca el altar del templo para guardar tu progreso. ¡Que la luz te acompañe!)',
     ], { face:'face_nun', name:'Hermana Mirena' });
-  }, 600);
+  });
 }
 
 /* ---------- Enrutado de input global ----------
@@ -510,54 +509,75 @@ function BattleKey(k) {
 }
 
 /* ---------- Boot ---------- */
+function hideBoot() {
+  const el = document.getElementById('boot-screen');
+  if (!el || el.dataset.gone) return;
+  el.dataset.gone = '1';
+  el.classList.add('fade');
+  const kill = () => { if (el.parentNode) el.remove(); };
+  el.addEventListener('transitionend', kill, { once: true });
+  setTimeout(kill, 700);
+}
+
 async function boot() {
-  // manifiesto de tiles (fetch falla en file:// → usa copia embebida)
+  const failsafe = setTimeout(() => {
+    console.warn('boot: timeout, mostrando título');
+    try { requestAnimationFrame(gameLoop); Title.show(); } catch (e) {}
+    hideBoot();
+  }, 10000);
   try {
-    const res = await fetch('assets/sprites/tiles_manifest.json');
-    manifest.tiles = await res.json();
-  } catch(e) {
-    console.warn('Usando manifiesto embebido (file://)');
-    manifest.tiles = (typeof TILES_MANIFEST !== 'undefined') ? TILES_MANIFEST : {};
+    // manifiesto de tiles (fetch falla en file:// → usa copia embebida)
+    try {
+      const ac = new AbortController();
+      const t = setTimeout(() => ac.abort(), 2500);
+      const res = await fetch('assets/sprites/tiles_manifest.json', { signal: ac.signal });
+      clearTimeout(t);
+      if (!res.ok) throw new Error('manifest HTTP ' + res.status);
+      manifest.tiles = await res.json();
+    } catch(e) {
+      console.warn('Usando manifiesto embebido (file://)');
+      manifest.tiles = (typeof TILES_MANIFEST !== 'undefined') ? TILES_MANIFEST : {};
+    }
+    manifest.tiles['water2'] = manifest.tiles['water2'] || manifest.tiles['water1'];
+
+    const paths = {
+      atlas: 'assets/sprites/tiles_atlas.png',
+      title_bg: 'assets/bg/title_bg.png',
+      bb_field: 'assets/bg/bb_field.png', bb_forest: 'assets/bg/bb_forest.png',
+      bb_cave: 'assets/bg/bb_cave.png', bb_castle: 'assets/bg/bb_castle.png',
+      cut_home: 'assets/bg/cut_home.png', cut_summon: 'assets/bg/cut_summon.png', cut_ending: 'assets/bg/cut_ending.png',
+      prop_tree_oak:'assets/sprites/prop_tree_oak.png', prop_tree_pine:'assets/sprites/prop_tree_pine.png',
+      prop_tree_autumn:'assets/sprites/prop_tree_autumn.png', prop_tree_small:'assets/sprites/prop_tree_small.png',
+      prop_canopy:'assets/sprites/prop_canopy.png', prop_flowers:'assets/sprites/prop_flowers.png',
+      prop_mushroom:'assets/sprites/prop_mushroom.png', prop_crystal:'assets/sprites/prop_crystal.png',
+      prop_well:'assets/sprites/prop_well.png', prop_throne:'assets/sprites/prop_throne.png',
+    };
+    Object.values(HEROES).forEach(h => { paths[h.walk] = 'assets/sprites/'+h.walk+'.png'; });
+    Object.values(MAPS).forEach(m => (m.npcs||[]).forEach(n => {
+      if (n.walk && !paths[n.walk[0]]) paths[n.walk[0]] = 'assets/sprites/'+n.walk[0]+'.png';
+    }));
+    Object.values(ENEMIES).forEach(e => paths[e.sprite] = 'assets/sprites/'+e.sprite+'.png');
+    const faceSet = new Set();
+    Object.values(MAPS).forEach(m => (m.npcs||[]).forEach(n => n.face && faceSet.add(n.face)));
+    Object.values(HEROES).forEach(h => faceSet.add(h.face));
+    faceSet.add('face_nun');
+    faceSet.forEach(f => paths[f] = 'assets/sprites/'+f+'.png');
+    ['house_inn','house_shop','house_temple','house_red_s','house_teal_s','house_green_m','house_blue_m'].forEach(h => paths[h] = 'assets/sprites/'+h+'.png');
+
+    await Assets.load(paths);
+    requestAnimationFrame(gameLoop);
+    Title.show();
+
+    $('title-screen').addEventListener('pointerdown', () => {
+      if (G.state==='title' && Title.mode==='press') { AudioSys.resume(); Title.buildMenu(); }
+    });
+    Mobile.fit();
+  } catch (e) {
+    console.error('boot:', e);
+    try { requestAnimationFrame(gameLoop); Title.show(); } catch (err) {}
+  } finally {
+    clearTimeout(failsafe);
+    hideBoot();
   }
-  manifest.tiles['water2'] = manifest.tiles['water2'] || manifest.tiles['water1'];
-
-  const paths = {
-    atlas: 'assets/sprites/tiles_atlas.png',
-    title_bg: 'assets/bg/title_bg.png',
-    bb_field: 'assets/bg/bb_field.png', bb_forest: 'assets/bg/bb_forest.png',
-    bb_cave: 'assets/bg/bb_cave.png', bb_castle: 'assets/bg/bb_castle.png',
-    cut_home: 'assets/bg/cut_home.png', cut_summon: 'assets/bg/cut_summon.png', cut_ending: 'assets/bg/cut_ending.png',
-    prop_tree_oak:'assets/sprites/prop_tree_oak.png', prop_tree_pine:'assets/sprites/prop_tree_pine.png',
-    prop_tree_autumn:'assets/sprites/prop_tree_autumn.png', prop_tree_small:'assets/sprites/prop_tree_small.png',
-    prop_canopy:'assets/sprites/prop_canopy.png', prop_flowers:'assets/sprites/prop_flowers.png',
-    prop_mushroom:'assets/sprites/prop_mushroom.png', prop_crystal:'assets/sprites/prop_crystal.png',
-    prop_well:'assets/sprites/prop_well.png', prop_throne:'assets/sprites/prop_throne.png',
-  };
-  // sheets de walk + monstruos usados
-  Object.values(HEROES).forEach(h => { paths[h.walk] = 'assets/sprites/'+h.walk+'.png'; });
-  // sheets de walk de los NPCs
-  Object.values(MAPS).forEach(m => (m.npcs||[]).forEach(n => {
-    if (n.walk && !paths[n.walk[0]]) paths[n.walk[0]] = 'assets/sprites/'+n.walk[0]+'.png';
-  }));
-  Object.values(ENEMIES).forEach(e => paths[e.sprite] = 'assets/sprites/'+e.sprite+'.png');
-  // caras usadas
-  const faceSet = new Set();
-  Object.values(MAPS).forEach(m => (m.npcs||[]).forEach(n => n.face && faceSet.add(n.face)));
-  Object.values(HEROES).forEach(h => faceSet.add(h.face));
-  faceSet.add('face_nun');
-  faceSet.forEach(f => paths[f] = 'assets/sprites/'+f+'.png');
-  // casas
-  ['house_inn','house_shop','house_temple','house_red_s','house_teal_s','house_green_m','house_blue_m'].forEach(h => paths[h] = 'assets/sprites/'+h+'.png');
-
-  await Assets.load(paths);
-  requestAnimationFrame(gameLoop);
-  Title.show();
-
-  // click/touch en título (toque o clic para comenzar)
-  $('title-screen').addEventListener('pointerdown', () => {
-    if (G.state==='title' && Title.mode==='press') { AudioSys.resume(); Title.buildMenu(); }
-  });
-  // Escalado responsivo (mobile-first) — la lógica vive en touch.js
-  Mobile.fit();
 }
 boot();

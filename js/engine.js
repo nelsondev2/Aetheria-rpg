@@ -16,10 +16,19 @@ const lerp = (a,b,t) => a+(b-a)*t;
 const Assets = {
   images: {},
   load(paths) {
-    const promises = Object.entries(paths).map(([k, src]) => new Promise((res, rej) => {
+    const promises = Object.entries(paths).map(([k, src]) => new Promise(res => {
       const im = new Image();
-      im.onload = () => { this.images[k] = im; res(); };
-      im.onerror = () => { console.warn('Falta asset:', src); res(); };
+      let settled = false;
+      const done = ok => {
+        if (settled) return;
+        settled = true;
+        if (ok) this.images[k] = im;
+        else console.warn('Falta asset:', src);
+        res();
+      };
+      im.onload = () => done(true);
+      im.onerror = () => done(false);
+      setTimeout(() => done(false), 8000);
       im.src = src;
     }));
     return Promise.all(promises);
@@ -624,7 +633,8 @@ function updatePlayer(dt, map) {
     let dir = null;
     if (Input.down('up')) dir='up'; else if (Input.down('down')) dir='down';
     else if (Input.down('left')) dir='left'; else if (Input.down('right')) dir='right';
-    const tapDash = dir && Input.lastDir === dir && (G.time - (Input.lastDirT || 0)) < 0.28;
+    const fresh = dir && dir !== Input._heldDir;
+    const tapDash = fresh && Input.lastDir === dir && (G.time - (Input.lastDirT || 0)) < 0.28;
     const wantDash = Input.hit('dash') || tapDash;
     if (dir) {
       p.dir = dir;
@@ -646,8 +656,9 @@ function updatePlayer(dt, map) {
         G.steps++;
       }
       p.speed = p.speedBase;
-      if (dirTap) { Input.lastDir = dir; Input.lastDirT = G.time; }
+      if (fresh) { Input.lastDir = dir; Input.lastDirT = G.time; }
     }
+    Input._heldDir = dir;
     if (Input.hit('cancel')) { UI.openMenu(); }
   }
   if (Input.hit('confirm')) {
