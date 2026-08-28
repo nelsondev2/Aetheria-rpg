@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<!-- Mobile-first: viewport completo, sin zoom, con safe-areas para notch -->
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="theme-color" content="#05060e">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="description" content="AETHERIA — Crónicas de Otro Mundo. Un JRPG isekai en el navegador.">
+<title>AETHERIA — Crónicas de Otro Mundo</title>
+<link rel="icon" type="image/png" href="assets/ui/favicon.png">
+<link rel="apple-touch-icon" href="assets/ui/favicon.png">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<div id="game-wrap">
+  <!-- Escenario del juego: solo el lienzo escalado -->
+  <div id="stage">
+    <canvas id="game" width="960" height="540"></canvas>
+  </div>
+
+  <!-- Capa UI DOM (resolución nativa de pantalla, mobile-first) -->
+  <div id="ui-layer">
+
+  <!-- Pantalla título -->
+  <div id="title-screen">
+    <img id="title-bg" src="assets/bg/title_bg.png" alt="">
+    <div id="title-sparkles" aria-hidden="true">
+      <span></span><span></span><span></span><span></span>
+      <span></span><span></span><span></span><span></span>
+      <span></span><span></span><span></span><span></span>
+    </div>
+    <div id="title-logo">
+      <img id="title-mark" src="assets/ui/favicon.png" alt="">
+      <div id="title-sub">✦ &nbsp; Crónicas de Otro Mundo &nbsp; ✦</div>
+      <div id="title-main">AETHERIA</div>
+      <div class="title-ornament" aria-hidden="true"><i></i><span>◆</span><i></i></div>
+      <div id="title-press" class="blink cta-press">Pulsa ENTER o toca la pantalla</div>
+    </div>
+    <div id="title-menu" class="hidden jwin"></div>
+    <div id="title-credits">Arte de personajes y monstruos: Charles Gabriel &amp; Antifarea (OpenGameArt, CC-BY 3.0) · Tilesets: OpenGameArt (CC-BY/CC0) · Ilustraciones: IA · v1.1</div>
+  </div><!-- /title-screen -->
+
+  <!-- HUD de exploración -->
+  <div id="play-hud" class="hidden">
+    <div id="hud-party"></div>
+    <div id="hud-meta">
+      <div class="hud-chip" id="hud-gold"></div>
+      <div class="hud-chip" id="hud-loc"></div>
+    </div>
+  </div>
+
+  <!-- Diálogo -->
+  <div id="dialog" class="hidden jwin">
+    <div id="dialog-portrait"><img id="dialog-face" alt=""></div>
+    <div id="dialog-body">
+      <div id="dialog-name"></div>
+      <div id="dialog-text"></div>
+      <div id="dialog-next" class="blink">▼</div>
+    </div>
+  </div>
+
+  <!-- Elección múltiple -->
+  <div id="choice-box" class="hidden jwin"></div>
+
+  <!-- Menú principal -->
+  <div id="menu" class="hidden">
+    <div class="menu-left jwin">
+      <div id="menu-gold" class="stat-line"></div>
+      <div id="menu-loc" class="stat-line"></div>
+      <ul id="menu-list"></ul>
+    </div>
+    <div class="menu-right jwin" id="menu-panel"></div>
+  </div>
+
+  <!-- Tienda -->
+  <div id="shop" class="hidden jwin">
+    <div id="shop-title"></div>
+    <div id="shop-list"></div>
+    <div id="shop-info"></div>
+  </div>
+
+  <!-- Aviso -->
+  <div id="toast" class="hidden jwin"></div>
+
+  <!-- Barra de combate en tiempo real -->
+  <div id="combat-bar" class="hidden">
+    <div id="cb-hint">A / Z atacar · 1-4 magia · Q poción</div>
+    <div id="cb-skills"></div>
+  </div>
+
+  <!-- Transición de encuentro -->
+  <div id="encounter-fx"></div>
+  </div><!-- /ui-layer -->
+</div><!-- /game-wrap -->
+
+<!-- Controles táctiles (solo se muestran en pantallas táctiles) -->
+<div id="gamepad" aria-hidden="true">
+  <div id="gp-dpad" class="gp-zone">
+    <span class="gp-pad gp-up" data-dir="up"></span>
+    <span class="gp-pad gp-left" data-dir="left"></span>
+    <span class="gp-pad gp-right" data-dir="right"></span>
+    <span class="gp-pad gp-center"></span>
+    <span class="gp-pad gp-down" data-dir="down"></span>
+    <span class="gp-arrow a-up">▲</span>
+    <span class="gp-arrow a-left">◀</span>
+    <span class="gp-arrow a-right">▶</span>
+    <span class="gp-arrow a-down">▼</span>
+  </div>
+  <div id="gp-actions" class="gp-zone">
+    <button type="button" id="gp-run" class="gp-btn" title="Correr (alternar)"><span>🏃</span><small>CORRER</small></button>
+    <button type="button" id="gp-b" class="gp-btn gp-b" title="Cancelar / Menú"><span>B</span><small>MENÚ</small></button>
+    <button type="button" id="gp-a" class="gp-btn gp-a" title="Atacar / Hablar / Aceptar"><span>A</span><small>ATK</small></button>
+  </div>
+</div>
+
+<!-- Botón pantalla completa (táctil) -->
+<button type="button" id="fs-btn" title="Pantalla completa">⛶</button>
+
+<!-- Aviso de orientación (retrato) -->
+<div id="rotate-hint" class="hidden">📱 Gira el dispositivo para disfrutar Aetheria en pantalla completa<span id="rotate-close"> ✕</span></div>
+
+<!-- Carga inicial -->
+<div id="boot-screen">
+  <img src="assets/ui/favicon.png" alt="" class="boot-mark">
+  <div class="boot-name">AETHERIA</div>
+  <div class="boot-sub">Crónicas de Otro Mundo</div>
+  <div class="boot-bar"><i></i></div>
+</div>
+
+<script src="js/audio.js"></script>
+<script src="js/data.js"></script>
+<script src="js/manifest.js"></script>
+<script src="js/maps.js"></script>
+<script src="js/engine.js"></script>
+<script src="js/battle.js"></script>
+<script src="js/ui.js"></script>
+<script src="js/touch.js"></script>
+<script src="js/main.js"></script>
+</body>
+</html>

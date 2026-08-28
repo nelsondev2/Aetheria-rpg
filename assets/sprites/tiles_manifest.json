@@ -1,0 +1,302 @@
+{
+ "grass1": [
+  0,
+  0
+ ],
+ "grass2": [
+  1,
+  0
+ ],
+ "grass3": [
+  2,
+  0
+ ],
+ "grass4": [
+  3,
+  0
+ ],
+ "grass_fl1": [
+  4,
+  0
+ ],
+ "grass_fl2": [
+  5,
+  0
+ ],
+ "grass_tu1": [
+  6,
+  0
+ ],
+ "grass_tu2": [
+  7,
+  0
+ ],
+ "dirt1": [
+  8,
+  0
+ ],
+ "dirt2": [
+  9,
+  0
+ ],
+ "dirt_c": [
+  10,
+  0
+ ],
+ "dirt_edge": [
+  11,
+  0
+ ],
+ "cobble1": [
+  12,
+  0
+ ],
+ "cobble2": [
+  13,
+  0
+ ],
+ "cobble_c": [
+  14,
+  0
+ ],
+ "cobble_plaza": [
+  15,
+  0
+ ],
+ "water1": [
+  0,
+  1
+ ],
+ "water2": [
+  1,
+  1
+ ],
+ "water_n": [
+  2,
+  1
+ ],
+ "water_s": [
+  3,
+  1
+ ],
+ "water_w": [
+  4,
+  1
+ ],
+ "water_e": [
+  5,
+  1
+ ],
+ "water_nw": [
+  6,
+  1
+ ],
+ "water_ne": [
+  7,
+  1
+ ],
+ "water_sw": [
+  8,
+  1
+ ],
+ "water_se": [
+  9,
+  1
+ ],
+ "forest_floor": [
+  10,
+  1
+ ],
+ "forest_floor2": [
+  11,
+  1
+ ],
+ "forest_floor3": [
+  12,
+  1
+ ],
+ "bridge_h": [
+  13,
+  1
+ ],
+ "cave_floor": [
+  14,
+  1
+ ],
+ "cave_floor2": [
+  15,
+  1
+ ],
+ "cave_wall": [
+  0,
+  2
+ ],
+ "cave_wall2": [
+  1,
+  2
+ ],
+ "cave_lava": [
+  2,
+  2
+ ],
+ "cave_rock": [
+  3,
+  2
+ ],
+ "wall_stone": [
+  4,
+  2
+ ],
+ "wall_stone2": [
+  5,
+  2
+ ],
+ "wall_stone3": [
+  6,
+  2
+ ],
+ "wall_brick_red": [
+  7,
+  2
+ ],
+ "wall_brick_red2": [
+  8,
+  2
+ ],
+ "floor_gold": [
+  9,
+  2
+ ],
+ "floor_dark": [
+  10,
+  2
+ ],
+ "gate_dark": [
+  11,
+  2
+ ],
+ "crystal_blue": [
+  12,
+  2
+ ],
+ "carpet_a": [
+  13,
+  2
+ ],
+ "carpet_b": [
+  14,
+  2
+ ],
+ "carpet_c": [
+  15,
+  2
+ ],
+ "carpet_gold": [
+  0,
+  3
+ ],
+ "wood_floor": [
+  1,
+  3
+ ],
+ "wood_floor2": [
+  2,
+  3
+ ],
+ "int_wall": [
+  3,
+  3
+ ],
+ "int_wall2": [
+  4,
+  3
+ ],
+ "chest": [
+  5,
+  3
+ ],
+ "chest_open": [
+  6,
+  3
+ ],
+ "bed": [
+  7,
+  3
+ ],
+ "table": [
+  8,
+  3
+ ],
+ "dresser": [
+  9,
+  3
+ ],
+ "pot1": [
+  10,
+  3
+ ],
+ "rock_tile": [
+  11,
+  3
+ ],
+ "column": [
+  12,
+  3
+ ],
+ "grave1": [
+  13,
+  3
+ ],
+ "grave2": [
+  14,
+  3
+ ],
+ "grave3": [
+  15,
+  3
+ ],
+ "torch_f0": [
+  0,
+  4
+ ],
+ "torch_f1": [
+  1,
+  4
+ ],
+ "torch_f2": [
+  2,
+  4
+ ],
+ "torch_blue": [
+  3,
+  4
+ ],
+ "torch_red": [
+  4,
+  4
+ ],
+ "torch_green": [
+  5,
+  4
+ ],
+ "fire_w0": [
+  6,
+  4
+ ],
+ "fire_w1": [
+  7,
+  4
+ ],
+ "fire_w2": [
+  8,
+  4
+ ],
+ "shrine": [
+  9,
+  4
+ ],
+ "void": [
+  10,
+  4
+ ]
+}
